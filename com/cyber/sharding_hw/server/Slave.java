@@ -82,19 +82,20 @@ public class Slave {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        while (!slaveConnections.isEmpty()) {};
-        System.out.println("slave " + hostName + ":" + port + " stopped");
+        synchronized (this) {
+            while (!slaveConnections.isEmpty()) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("slave " + hostName + ":" + port + " stopped");
+        }
         return true;
     }
 
     public String getHostName() {
-//        InetAddress ip = null;
-//        try {
-//            ip = InetAddress.getLocalHost();
-//        } catch (UnknownHostException e) {
-//            e.printStackTrace();
-//        }
-//        return ip.getHostAddress();
         return hostName;
     }
 
@@ -165,6 +166,9 @@ public class Slave {
                 e.printStackTrace();
             }
             slaveConnections.remove(this);
+            synchronized (Slave.this) {
+                Slave.this.notifyAll();
+            }
         }
 
         private Status create(final int key, Object item) {
